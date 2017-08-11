@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Settlers</title>
+</head>
+<body>
+  <h1>Settlers</h1>
+  <hr>
+  <h2>Log in<h2>
+  <form action="/login" method="POST" name="login-form">
+    <input type="email" name="log-email" id="log-email-field" placeholder="Email" required>
+    <input type="password" name="log-pass" id="log-pass-field" placeholder="Password" required>
+    <input type="submit" value="Submit">
+    <input type="reset" value="Reset">
+  </form>
+  <hr>
+  <h2>Register</h2>
+  <form action="/register" method="POST" name="reg-form">
+    <input type="name" name="reg-name" id="reg-name-field" placeholder="Name" required>
+    <input type="email" name="reg-email" id="reg-email-field" placeholder="Email" required>
+    <input type="password" name="reg-pass" id="reg-pass-field" placeholder="Password" required>
+    <input type="password" name="reg-pass-repeat" id="reg-pass-repeat-field" placeholder="Repeat password" required>
+    <input type="submit" value="Submit">
+    <input type="reset" value="Reset">
+  </form>
+</body>
+</html>
