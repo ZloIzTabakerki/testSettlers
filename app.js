@@ -23,7 +23,12 @@ const express = require('express'),
         ssl: true,
         sslfactory: 'org.postgresql.ssl.NonValidatingFactory'
       });
-      
+
+console.log(process.env.SERVICE_EMAIL);
+console.log(process.env.SERVICE_EMAIL_PASS);
+console.log(process.env.SERVICE_DB_USER);
+console.log(process.env.SERVICE_DB_PASS);
+
 app.set('view engine', 'ejs');
 
 //middlewares
@@ -39,43 +44,47 @@ app.get('/', (req, res) => {
   res.render('index');
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', (req, res, next) => {
   const email = req.body['log-email'],
         pass = req.body['log-pass'];
-  authentUser(email, pass, authResult => {
-    if (!authResult) {
-      res.send('Wrong Email or password.');
-    }        
+
+  authentUser(email, pass, next, () => {    
     res.send('Greeting!');
-  }, err => {
-    res.send('Something went wrong:' + err.message);
   });
 });
 
-app.post('/register', (req, res) => {
-  const name = req.body['reg-name'],
-        email = req.body['reg-email'],
-        pass = req.body['reg-pass'],
-        passCheck = req.body['reg-pass-repeat'];
-  
-  if (pass !== passCheck) {
-    res.send('Passwords didn\'t match.');
+app.post('/register', (req, res, next) => {
+
+  if (req.body['reg-pass'] !== req.body['reg-pass-repeat']) {
+    next(new Error('Passwords didn\'t match.'));
   }
 
   const newUser = {
-    name: name,
-    email: email,
-    password: pass
-  } 
+    name: req.body['reg-name'],
+    email: req.body['reg-email'],
+    pass: req.body['reg-pass']
+  }
 
-  createNewUser(newUser, () => {
+  createNewUser(newUser, next, () => {
+    const letter = createGreetLetter(newUser);
+    sendMail(letter, next);
     res.send('Nice to meet you, ' + newUser.name);
-  }, (err) => {
-    res.send('Something went wrong:' + err.message);
   });
+
 });
 
-function createNewUser(user, onResolved, onError) {
+//errors handling
+
+app.use((err, req, res) => {
+  if (app.get('env') !== 'development') res.sendStatus(500);
+
+  console.log(err);
+  res.send('Something went wrong: ' + err.message);
+});
+
+//callbacks
+
+function createNewUser(user, onError, onResolved) {
   db.any(`INSERT INTO users (name, email, password, cash, reg_date)
             VALUES (          
             '${user.name}',
@@ -84,21 +93,18 @@ function createNewUser(user, onResolved, onError) {
             100, 
             '${new Date().toISOString()}'
           );`, [true])        
-    .then(data => {
-      const letter = createGreetLetter(user);
-      sendMail(letter);
-      onResolved(data);
+    .then(() => {
+      onResolved();
     })
     .catch(error => {
-      console.log(error);
       onError(error);
     });
 }
-
-function sendMail(letter) {
+ 
+function sendMail(letter, onError) {
   mailTransporter.sendMail(letter, (error, info) => {
     if (error) {
-      console.log(error);
+      onError(error);
     } else {
       console.log('Email sent: ' + info.response);
     }
@@ -116,17 +122,16 @@ function createGreetLetter(user) {
   }
 }
 
-function authentUser(email, password, onResolved, onError) {
+function authentUser(email, pass, onError, onResolved) {
   db.one(`SELECT password FROM users
           WHERE email = '${email}';`)
     .then(data => {
-      const authResult = password === data.password ? 
-                         true : 
-                         false;
-      onResolved(authResult, data);
+      if (pass !== data.password) {
+        throw Error('Invalid Email or password.');
+      }
+      onResolved();
     })
     .catch(error => {
-      console.log(error);
       onError(error);
     });
 }
