@@ -6,7 +6,6 @@ const express = require('express'),
       bodyParser = require('body-parser'),
       pgp = require('pg-promise')(),      
       port = process.env.PORT || 3000,
-
       mailTransporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -44,6 +43,10 @@ app.get('/', (req, res) => {
   res.render('index');
 });
 
+app.get('/favicon.ico', (req, res) => {
+  res.sendStatus(404);
+});
+
 app.post('/login', (req, res, next) => {
   const email = req.body['log-email'],
         pass = req.body['log-pass'];
@@ -78,7 +81,7 @@ app.post('/register', (req, res, next) => {
 app.use((err, req, res) => {
   if (app.get('env') !== 'development') res.sendStatus(500);
 
-  console.log(err);
+  console.log(err.message);
   res.send('Something went wrong: ' + err.message);
 });
 
